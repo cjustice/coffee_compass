@@ -1,22 +1,24 @@
 package com.connorjustice.coffeecompass;
 
 import android.content.Context;
+import android.graphics.Color;
 import android.hardware.Sensor;
 import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
 import android.location.Location;
-import android.location.LocationListener;
 import android.location.LocationManager;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.View;
 import android.view.animation.Animation;
 import android.view.animation.RotateAnimation;
 import android.widget.ImageView;
+import android.widget.TextView;
 
-public class MainActivity extends AppCompatActivity implements SensorEventListener, LocationListener{
+public class MainActivity extends AppCompatActivity implements SensorEventListener{
 
     private ImageView mPointer;
     private SensorManager mSensorManager;
@@ -29,8 +31,28 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
     private float[] mR = new float[9];
     private float[] mOrientation = new float[3];
     private float mCurrentDegree = 0f;
-    private double latitude;
-    private double longitude;
+    private View rectView;
+    private double coffeeLat;
+    private double coffeeLong;
+    private static final String TAG = MainActivity.class.getSimpleName();
+    // Acquire a reference to the system Location Manager
+    LocationManager locationManager;
+    private Location location;
+    private TextView txtV;
+    LocationListener locationListener;
+
+    class LocationListener implements android.location.LocationListener{
+        public void onLocationChanged(Location location) {
+            // Called when a new location is found by the network location provider.
+            updateProximityIndicator(location);
+        }
+
+        public void onStatusChanged(String provider, int status, Bundle extras) {}
+
+        public void onProviderEnabled(String provider) {}
+
+        public void onProviderDisabled(String provider) {}
+    };
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -40,11 +62,16 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
         mAccelerometer = mSensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
         mMagnetometer = mSensorManager.getDefaultSensor(Sensor.TYPE_MAGNETIC_FIELD);
         mPointer = (ImageView) findViewById(R.id.pointer);
-
-        //Register the GPS
-        LocationManager locationManager = (LocationManager)
-                getSystemService(Context.LOCATION_SERVICE);
-        locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 0, 0, this);
+        txtV = (TextView) findViewById(R.id.myAwesomeTextView);
+        rectView = (View) findViewById(R.id.myRectangleView);
+        // Register the listener with the Location Manager to receive location updates
+        locationManager = (LocationManager)
+                this.getSystemService(Context.LOCATION_SERVICE);
+        // Define a listener that responds to location updates
+        locationListener = new LocationListener();
+        locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 0, 0, locationListener);
+        locationManager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, 0, 0, locationListener);
+        location = locationManager.getLastKnownLocation(LocationManager.NETWORK_PROVIDER);
     }
 
     @Override
@@ -52,13 +79,19 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
         super.onResume();
         mSensorManager.registerListener(this, mAccelerometer, SensorManager.SENSOR_DELAY_GAME);
         mSensorManager.registerListener(this, mMagnetometer, SensorManager.SENSOR_DELAY_GAME);
+        locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 0, 0, locationListener);
+        locationManager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, 0, 0, locationListener);
     }
 
     @Override
     protected void onPause() {
         super.onPause();
+        locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 0, 0, locationListener);
+        locationManager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, 0, 0, locationListener);
         mSensorManager.unregisterListener(this, mAccelerometer);
         mSensorManager.unregisterListener(this, mMagnetometer);
+        locationManager.removeUpdates(locationListener);
+
     }
 
     @Override
@@ -120,34 +153,14 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
         }
     }
 
-    public void updateProximityIndicator(double latitude, double longitude) {
-        System.out.println("Test " + latitude + " long " + longitude);
-    }
-
     @Override
     public void onAccuracyChanged(Sensor sensor, int accuracy) {
 
     }
 
-    @Override
-    public void onLocationChanged(Location location) {
-        latitude = location.getLatitude();
-        longitude = location.getLongitude();
-        updateProximityIndicator(latitude, longitude);
+    public void updateProximityIndicator(Location location) {
+        txtV.setText("Latitude: " + location.getLatitude() + " Longitude: " + location.getLongitude());
+        rectView.setBackgroundColor(Color.parseColor("#ff0000"));
     }
 
-    @Override
-    public void onStatusChanged(String provider, int status, Bundle extras) {
-
-    }
-
-    @Override
-    public void onProviderEnabled(String provider) {
-
-    }
-
-    @Override
-    public void onProviderDisabled(String provider) {
-
-    }
 }
