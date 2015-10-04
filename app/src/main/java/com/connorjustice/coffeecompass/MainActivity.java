@@ -45,6 +45,10 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
     Location[] coffeeLocations = initializeCoffeeLocations();
     private int destLoc;
     private final float MAXDIST = 700.0f;
+    private float azimuthInDegrees;
+    private float bearingToCoffee;
+    private float declination = 13.84f;
+    private float headingToCoffee;
 
     private class MyLocationListener implements LocationListener{
         public void onLocationChanged(Location location) {
@@ -173,14 +177,17 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
             SensorManager.getRotationMatrix(mR, null, mLastAccelerometer, mLastMagnetometer);
             SensorManager.getOrientation(mR, mOrientation);
             float azimuthInRadians = mOrientation[0];
-            float azimuthInDegrees = (float) (Math.toDegrees(azimuthInRadians) + 360)%360;
-            RotateAnimation ra = new RotateAnimation(mCurrentDegree, -azimuthInDegrees,
+            //Azimuth is a positive float between 0 and 360
+            headingToCoffee = (float) (Math.toDegrees(azimuthInRadians)-declination
+                    +bearingToCoffee+ 360)%360;
+            RotateAnimation ra = new RotateAnimation(mCurrentDegree, -headingToCoffee,
                     Animation.RELATIVE_TO_SELF, 0.5f, Animation.RELATIVE_TO_SELF, 0.5f);
+//            txtV.setText("Location: " + destLoc + "Distance: " + dist +
+//                    "Azimuth: " + azimuthInDegrees + " Heading: " + headingToCoffee);
             ra.setDuration(250);
             ra.setFillAfter(true);
             mPointer.startAnimation(ra);
-            mCurrentDegree = -azimuthInDegrees;
-
+            mCurrentDegree = -headingToCoffee;
         }
     }
 
@@ -213,11 +220,12 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
                     destLoc = i;
                 }
             }
+            bearingToCoffee = coffeeLocations[destLoc].bearingTo(location);
             locked = true;
         } else if (locked && (location != null)) {
             dist = location.distanceTo(coffeeLocations[destLoc]);
             rectView.setBackgroundColor(gradientColor(dist));
-            txtV.setText("Location: " + destLoc + "Distance: " + dist);
+            bearingToCoffee = coffeeLocations[destLoc].bearingTo(location);
         }
     }
 
