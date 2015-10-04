@@ -7,6 +7,7 @@ import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
 import android.location.Location;
+import android.location.LocationListener;
 import android.location.LocationManager;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
@@ -37,11 +38,15 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
     private static final String TAG = MainActivity.class.getSimpleName();
     // Acquire a reference to the system Location Manager
     LocationManager locationManager;
-    private Location location;
     private TextView txtV;
     LocationListener locationListener;
+    private boolean locked = false;
+    private float dist;
+    Location[] coffeeLocations = initializeCoffeeLocations();
+    private int destLoc;
+    private final float MAXDIST = 700.0f;
 
-    class LocationListener implements android.location.LocationListener{
+    private class MyLocationListener implements LocationListener{
         public void onLocationChanged(Location location) {
             // Called when a new location is found by the network location provider.
             updateProximityIndicator(location);
@@ -68,10 +73,13 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
         locationManager = (LocationManager)
                 this.getSystemService(Context.LOCATION_SERVICE);
         // Define a listener that responds to location updates
-        locationListener = new LocationListener();
-        locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 0, 0, locationListener);
-        locationManager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, 0, 0, locationListener);
-        location = locationManager.getLastKnownLocation(LocationManager.NETWORK_PROVIDER);
+        locationListener = new MyLocationListener();
+        locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER,
+                0, 0, locationListener);
+        locationManager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER,
+                0, 0, locationListener);
+
+
     }
 
     @Override
@@ -92,6 +100,29 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
         mSensorManager.unregisterListener(this, mMagnetometer);
         locationManager.removeUpdates(locationListener);
 
+    }
+
+    private Location[] initializeCoffeeLocations() {
+        Location[] locs = new Location[6];
+        locs[0] = new Location("");
+        locs[0].setLatitude(41.55736);
+        locs[0].setLongitude(-72.65060);
+        locs[1] = new Location("");
+        locs[1].setLatitude(41.55327);
+        locs[1].setLongitude(-72.65755);
+        locs[2] = new Location("");
+        locs[2].setLatitude(41.55679);
+        locs[2].setLongitude(-72.65683);
+        locs[3] = new Location("");
+        locs[3].setLatitude(41.55426);
+        locs[3].setLongitude(-72.65590);
+        locs[4] = new Location("");
+        locs[4].setLatitude(41.55222);
+        locs[4].setLongitude(-72.65514);
+        locs[5] = new Location("");
+        locs[5].setLatitude(41.55290);
+        locs[5].setLongitude(-72.66024);
+        return locs;
     }
 
     @Override
@@ -158,9 +189,36 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
 
     }
 
+    private int gradientColor(double dist) {
+        double H;
+        double power;
+        if (dist > MAXDIST) {
+            H = 1.0;
+        } else {
+            power = 1.0-(dist/MAXDIST);
+            H = power * 0.4;
+        }
+        double S = 0.9; // Saturation
+        double B = 0.9; // Brightness
+        return Color.HSVToColor(new float[]{(float)H*360, (float)S, (float)B});
+    }
+
     public void updateProximityIndicator(Location location) {
-        txtV.setText("Latitude: " + location.getLatitude() + " Longitude: " + location.getLongitude());
-        rectView.setBackgroundColor(Color.parseColor("#ff0000"));
+        float tempDist;
+        if (!(locked) && (location != null)) {
+            for (int i = 0; i < coffeeLocations.length; i++) {
+                tempDist = coffeeLocations[i].distanceTo(location);
+                if (tempDist < dist || dist == 0.0f) {
+                    dist = tempDist;
+                    destLoc = i;
+                }
+            }
+            locked = true;
+        } else if (locked && (location != null)) {
+            dist = location.distanceTo(coffeeLocations[destLoc]);
+            rectView.setBackgroundColor(gradientColor(dist));
+            txtV.setText("Location: " + destLoc + "Distance: " + dist);
+        }
     }
 
 }
