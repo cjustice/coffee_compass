@@ -16,5 +16,10 @@
         android:layout_height="wrap_content"
         android:layout_centerInParent="true"
         android:src="@drawable/pointer" />
+    <View
+        android:id="@+id/myRectangleView"
+        android:layout_width="200dp"
+        android:layout_height="50dp"
+        android:background="@drawable/rectangle"/>
 
 </RelativeLayout>
