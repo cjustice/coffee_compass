@@ -10,6 +10,7 @@ import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
 import android.os.Bundle;
+import android.os.Vibrator;
 import android.support.v7.app.AppCompatActivity;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -45,7 +46,6 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
     Location[] coffeeLocations = initializeCoffeeLocations();
     private int destLoc;
     private final float MAXDIST = 700.0f;
-    private float azimuthInDegrees;
     private float bearingToCoffee;
     private float declination = 13.84f;
     private float headingToCoffee;
@@ -196,6 +196,23 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
 
     }
 
+    private String matchNumWithName() {
+        if (destLoc == 0) {
+            return "Red and Black";
+        } else if (destLoc == 1) {
+            return "Pi Cafe";
+        } else if (destLoc == 2) {
+            return "Usdan Center";
+        } else if (destLoc == 3) {
+            return "Espwesso";
+        } else if (destLoc == 5) {
+            return "Neon Deli";
+        } else if (destLoc == 4) {
+            return "Summerfields";
+        } else {
+            return "Something got screwed up";
+        }
+    }
     private int gradientColor(double dist) {
         double H;
         double power;
@@ -222,8 +239,13 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
             }
             bearingToCoffee = coffeeLocations[destLoc].bearingTo(location);
             locked = true;
+            txtV.setText(matchNumWithName());
         } else if (locked && (location != null)) {
             dist = location.distanceTo(coffeeLocations[destLoc]);
+            if (dist < 20.0) {
+                Vibrator v = (Vibrator) this.getSystemService(Context.VIBRATOR_SERVICE);
+                v.vibrate(700);
+            }
             rectView.setBackgroundColor(gradientColor(dist));
             bearingToCoffee = coffeeLocations[destLoc].bearingTo(location);
         }
