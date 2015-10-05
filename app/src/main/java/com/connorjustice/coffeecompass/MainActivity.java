@@ -47,7 +47,7 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
     private int destLoc;
     private final float MAXDIST = 700.0f;
     private float bearingToCoffee;
-    private float declination = 13.84f;
+    private float declination = 346.16f;
     private float headingToCoffee;
 
     private class MyLocationListener implements LocationListener{
@@ -61,7 +61,7 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
         public void onProviderEnabled(String provider) {}
 
         public void onProviderDisabled(String provider) {}
-    };
+    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -72,7 +72,7 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
         mMagnetometer = mSensorManager.getDefaultSensor(Sensor.TYPE_MAGNETIC_FIELD);
         mPointer = (ImageView) findViewById(R.id.pointer);
         txtV = (TextView) findViewById(R.id.myAwesomeTextView);
-        rectView = (View) findViewById(R.id.myRectangleView);
+        rectView = findViewById(R.id.myRectangleView);
         // Register the listener with the Location Manager to receive location updates
         locationManager = (LocationManager)
                 this.getSystemService(Context.LOCATION_SERVICE);
@@ -80,10 +80,6 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
         locationListener = new MyLocationListener();
         locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER,
                 0, 0, locationListener);
-        locationManager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER,
-                0, 0, locationListener);
-
-
     }
 
     @Override
@@ -92,18 +88,15 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
         mSensorManager.registerListener(this, mAccelerometer, SensorManager.SENSOR_DELAY_GAME);
         mSensorManager.registerListener(this, mMagnetometer, SensorManager.SENSOR_DELAY_GAME);
         locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 0, 0, locationListener);
-        locationManager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, 0, 0, locationListener);
     }
 
     @Override
     protected void onPause() {
         super.onPause();
         locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 0, 0, locationListener);
-        locationManager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, 0, 0, locationListener);
         mSensorManager.unregisterListener(this, mAccelerometer);
         mSensorManager.unregisterListener(this, mMagnetometer);
         locationManager.removeUpdates(locationListener);
-
     }
 
     private Location[] initializeCoffeeLocations() {
@@ -165,7 +158,7 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
     @Override
     public void onSensorChanged(SensorEvent event) {
         if (event.sensor == mAccelerometer) {
-            exponentialSmoothing(event.values, mLastAccelerometer, 0.2f);
+            exponentialSmoothing(event.values, mLastAccelerometer, 0.5f);
             //System.arraycopy(event.values, 0, mLastAccelerometer, 0, event.values.length);
             mLastAccelerometerSet = true;
         } else if (event.sensor == mMagnetometer) {
@@ -178,8 +171,9 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
             SensorManager.getOrientation(mR, mOrientation);
             float azimuthInRadians = mOrientation[0];
             //Azimuth is a positive float between 0 and 360
-            headingToCoffee = (float) (Math.toDegrees(azimuthInRadians)-declination
-                    +bearingToCoffee+ 360)%360;
+            headingToCoffee = (float) (Math.toDegrees(azimuthInRadians)+declination
+                    - bearingToCoffee);
+            headingToCoffee = (headingToCoffee +180)% 360;
             RotateAnimation ra = new RotateAnimation(mCurrentDegree, -headingToCoffee,
                     Animation.RELATIVE_TO_SELF, 0.5f, Animation.RELATIVE_TO_SELF, 0.5f);
 //            txtV.setText("Location: " + destLoc + "Distance: " + dist +
@@ -215,16 +209,14 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
     }
     private int gradientColor(double dist) {
         double H;
-        double power;
         if (dist > MAXDIST) {
             H = 1.0;
         } else {
-            power = 1.0-(dist/MAXDIST);
-            H = power * 0.4;
+            H = 360 * (dist / MAXDIST);
         }
         double S = 0.9; // Saturation
         double B = 0.9; // Brightness
-        return Color.HSVToColor(new float[]{(float)H*360, (float)S, (float)B});
+        return Color.HSVToColor(new float[]{(float)H, (float)S, (float)B});
     }
 
     public void updateProximityIndicator(Location location) {

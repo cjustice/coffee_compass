@@ -1,0 +1,2 @@
+<h1>The Coffee Compass</h1>
+The Coffee Compass is simple: It finds the nearest Wesleyan-based coffee vendor, and points you toward it. The color splotch will change as you get closer to your destination. Requires High Accuracy/GPS location data. Requires Android 4.1+
